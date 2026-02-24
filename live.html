@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.ui.min.js"
+    crossorigin="anonymous"></script>
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/controls.min.css"
+    crossorigin="anonymous">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      background: #000;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .shaka-video-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      object-fit: contain;
+    }
+
+    .shaka-spinner-container,
+    .shaka-spinner,
+    .shaka-spinner-svg {
+      display: none !important;
+    }
+
+    .custom-watermark {
+      position: absolute;
+      z-index: 40;
+      pointer-events: none;
+      top: 65%;
+      left: 6%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.12);
+    }
+
+    @media (max-width: 700px) {
+      .custom-watermark {
+        font-size: 9px;
+        top: 60%;
+        left: 16%;
+      }
+    }
+  </style>
+
+  <style>
+    .custom-watermark {
+      position: absolute;
+      z-index: 40;
+      pointer-events: none;
+      top: 65%;
+      left: 11%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.12);
+    }
+
+    .custom-watermark img {
+      height: 52px;
+      width: 52px;
+      opacity: 80%;
+    }
+
+
+    @media (max-width: 700px) {
+      .custom-watermark {
+        font-size: 9px;
+        top: 58%;
+        left: 4%;
+      }
+
+      .custom-watermark img {
+        height: 45px;
+        width: 45px;
+        opacity: 80%;
+      }
+    }
+
+
+
+    .shaka-seek-bar {
+      background-color: #C3C3C3 !important;
+      border-radius: 10px;
+    }
+
+    .shaka-seek-bar-container input[type="range"]::-webkit-slider-thumb {
+      background-color: #2962ff !important;
+    }
+  </style>
+
+
+
+</head>
+
+<body>
+  <div class="shaka-video-container" data-shaka-player>
+    <video autoplay playsinline preload="metadata"
+      poster="https://i.postimg.cc/hP05m6S6/cricketlive.png"
+      preload="auto"></video>
+    <div class="custom-watermark"><img
+        src="https://i.postimg.cc/SNjy16J7/cricketlive.png"></div>
+
+    <script>
+      window.si = window.si || function() {
+        (window.siq = window.siq || []).push(arguments);
+      };
+    </script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', async () => {
+        shaka.polyfill.installAll();
+        if (!shaka.Player.isBrowserSupported()) return;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const channelId = urlParams.get('id');
+        if (!channelId) return;
+
+        let streamUrl = "";
+        let drmConfig = {
+          clearKeys: {}
+        };
+        let cookieHeader = "";
+
+        try {
+          const [chanRes, cookRes] = await Promise.all([
+            fetch(
+              'https://raw.githubusercontent.com/filmyfly4wap/mpd/refs/heads/main/mpd.json'
+            ),
+            fetch(
+              'https://raw.githubusercontent.com/24sports-net/cookie-updater/refs/heads/main/cookie.json'
+            )
+          ]);
+
+          const channels = await chanRes.json();
+          const cookieData = await cookRes.json();
+
+          const channelData = channels.find(c => c.channel_id ===
+            channelId);
+          if (channelData) {
+            streamUrl = channelData.channel_url.split('?')[0];
+            drmConfig.clearKeys[channelData.keyId] = channelData.key;
+            cookieHeader = cookieData.cookieHeader;
+            document.title = channelData.channel_name +
+              " - Sayan Official";
+          }
+        } catch (e) {}
+
+        const video = document.querySelector('video');
+        const player = new shaka.Player();
+        await player.attach(video);
+
+        const container = document.querySelector(
+          '.shaka-video-container');
+        const ui = new shaka.ui.Overlay(player, container, video);
+
+        ui.configure({
+          controlPanelElements: [
+            'play_pause',
+            'time_and_duration',
+            'spacer',
+            'language',
+            'captions',
+            'picture_in_picture',
+            'quality',
+            'fullscreen'
+          ],
+          seekBarColors: {
+            base: 'white',
+            buffered: 'red',
+            played: 'green'
+          }
+        });
+
+        player.configure({
+          drm: drmConfig,
+          manifest: {
+            defaultPresentationDelay: 5
+          },
+          streaming: {
+            safeSeekOffset: 5,
+            bufferingGoal: 6,
+            rebufferingGoal: 2,
+            alwaysStreamText: true,
+            lowLatencyMode: true
+          }
+        });
+
+        player.getNetworkingEngine().registerRequestFilter((type,
+          request) => {
+          request.headers['Referer'] = 'https://www.jiotv.com/';
+          request.headers['User-Agent'] =
+            "plaYtv/7.1.5 (Linux;Android 13) ExoPlayerLib/2.11.6";
+
+          if (cookieHeader) {
+            request.headers['Cookie'] = cookieHeader;
+
+            if (
+              (type === shaka.net.NetworkingEngine.RequestType
+                .MANIFEST ||
+                type === shaka.net.NetworkingEngine.RequestType
+                .SEGMENT) &&
+              !request.uris[0].includes('__hdnea__=')
+            ) {
+              const sep = request.uris[0].includes('?') ? '&' : '?';
+              request.uris[0] += sep + cookieHeader;
+            }
+          }
+        });
+
+        try {
+          await player.load(streamUrl);
+          video.play();
+        } catch (e) {}
+      });
+    </script>
+</body>
+
+</html>
