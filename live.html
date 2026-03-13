@@ -43,16 +43,15 @@ const url=new URL(window.location.href);
 return url.searchParams.get(name);
 }
 
-const streamUrl=getParam("url");
-const keyId=getParam("keyId");
-const key=getParam("key");
-
-const COOKIE_URL="https://allrounder-live.pages.dev/api/cookie.json";
+const CHANNEL_JSON="https://raw.githubusercontent.com/filmyfly4wap/mpd/refs/heads/main/mpd.json";
+const COOKIE_URL="https://raw.githubusercontent.com/filmyfly4wap/cookie/refs/heads/main/cookie.json";
 
 document.addEventListener("DOMContentLoaded",async()=>{
 
-if(!streamUrl){
-alert("Stream URL missing");
+const channelId=getParam("id");
+
+if(!channelId){
+alert("Channel ID missing");
 return;
 }
 
@@ -71,13 +70,40 @@ await player.attach(video);
 
 new shaka.ui.Overlay(player,container,video);
 
+/* JSON Fetch */
+
+let channel;
+
+try{
+
+const response=await fetch(CHANNEL_JSON);
+const channels=await response.json();
+
+channel=channels.find(c=>c.channel_id===channelId);
+
+if(!channel){
+alert("Channel not found");
+return;
+}
+
+}catch(e){
+
+console.error("JSON load error",e);
+return;
+
+}
+
+/* DRM */
+
 player.configure({
 drm:{
 clearKeys:{
-[keyId]:key
+[channel.keyId]:channel.key
 }
 }
 });
+
+/* Cookie */
 
 let cookieValue="";
 
@@ -90,6 +116,8 @@ cookieValue=data.cookie || "";
 }catch(e){
 console.log("Cookie fetch failed");
 }
+
+/* Request Filter */
 
 player.getNetworkingEngine().registerRequestFilter((type,request)=>{
 
@@ -119,9 +147,12 @@ request.uris[0]+=sep+"__hdnea__="+token;
 
 });
 
+/* Load Stream */
+
 try{
 
-await player.load(streamUrl);
+await player.load(channel.channel_url);
+
 video.play().catch(()=>{});
 
 }catch(e){
