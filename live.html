@@ -1,149 +1,232 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Live Cricket Stream</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Star Hindi</title>
 
-<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.ui.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/controls.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.ui.min.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/controls.min.css" crossorigin="anonymous">
 
-<style>
-body{
-margin:0;
-background:#000;
-overflow:hidden;
-}
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      background: #000;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .shaka-video-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      object-fit: contain;
+    }
+    .shaka-spinner-container,
+    .shaka-spinner,
+    .shaka-spinner-svg {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+    }
 
-.shaka-video-container{
-position:fixed;
-inset:0;
-}
+  </style>
+  
+      <style>
+    .custom-watermark {
+      position: absolute;
+      z-index: 40;
+      pointer-events: none;
+      top: 65%;
+      left: 11%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.12);
+    }
+    
+    .custom-watermark img {
+      height: 52px;
+      width: 52px;
+      opacity: 80%;
+    }
+    
+    
+    @media (max-width: 700px) {
+      .custom-watermark {
+        font-size: 9px;
+        top: 58%;
+        left: 4%;
+      }
+      
+      .custom-watermark img {
+        height: 45px;
+        width: 45px;
+        opacity: 80%;
+      }
+    }
 
-video{
-width:100%;
-height:100%;
-object-fit:contain;
-}
 
-.custom-watermark{
-position:absolute;
-z-index:40;
-pointer-events:none;
-top:65%;
-left:11%;
-}
 
-.custom-watermark img{
-height:52px;
-width:52px;
-opacity:.8;
-}
 </style>
 
+
+  
 </head>
 
 <body>
 
-<div class="shaka-video-container" id="player-container">
-<video id="video" autoplay muted playsinline></video>
-<div class="custom-watermark">
-<img src="https://i.postimg.cc/SKhzQBJB/cricketlive.png">
-</div>
-</div>
+  <div class="shaka-video-container" data-shaka-player>
+    <video autoplay playsinline preload="metadata"></video>
+  </div>
 
 <script>
 
-const JSON_URL = "https://raw.githubusercontent.com/filmyfly4wap/mpd/refs/heads/main/mpd.json";
-const COOKIE_URL = "https://allrounder-live.pages.dev/api/cookie.json";
+document.addEventListener('DOMContentLoaded', async () => {
 
 function getParam(name){
-const url = new URL(window.location.href);
-return url.searchParams.get(name);
+  const url = new URL(window.location.href);
+  return url.searchParams.get(name);
 }
 
-async function initPlayer(){
+const channelId = getParam("id");
 
-const id = getParam("id");
-
-if(!id){
-alert("Channel ID Missing");
-return;
-}
-
-const json = await fetch(JSON_URL);
-const channels = await json.json();
-
-const channel = channels.find(c => c.channel_id === id);
-
-if(!channel){
-alert("Channel Not Found");
-return;
-}
-
-const video = document.getElementById("video");
-const container = document.getElementById("player-container");
+const JSON_URL = "https://raw.githubusercontent.com/filmyfly4wap/mpd/refs/heads/main/mpd.json";
+const COOKIE_API = "https://allrounder-live.pages.dev/api/cookie.json";
 
 shaka.polyfill.installAll();
 
-if(!shaka.Player.isBrowserSupported()){
-alert("Browser Not Supported");
-return;
+if (!shaka.Player.isBrowserSupported()) {
+  console.error('Browser not supported');
+  return;
 }
 
+const video = document.querySelector('video');
 const player = new shaka.Player();
 await player.attach(video);
 
-const ui = new shaka.ui.Overlay(player,container,video);
+const container = document.querySelector('.shaka-video-container');
+const ui = new shaka.ui.Overlay(player, container, video);
 
 ui.configure({
-controlPanelElements:[
-"play_pause",
-"time_and_duration",
-"spacer",
-"quality",
-"mute",
-"fullscreen"
-]
+  controlPanelElements: [
+    'play_pause','time_and_duration','mute','volume',
+    'spacer','quality','fullscreen'
+  ],
+  volumeBarColors:{
+    base:'rgb(255,255,255,1)',
+    level:'rgb(63,107,255,1)'
+  },
+  seekBarColors:{
+    base:'rgba(255,255,255,1)',
+    buffered:'rgba(255,255,255,1)',
+    played:'rgb(63,107,255,1)'
+  }
 });
 
-player.configure({
-drm:{
-clearKeys:{
-[channel.keyId]:channel.key
-}
-}
-});
+/* JSON LOAD */
 
-let cookieValue="";
+let streamUrl = "";
+let keyId = "";
+let key = "";
 
 try{
-const response = await fetch(COOKIE_URL);
-const data = await response.json();
-cookieValue = data.cookie || "";
-}catch(e){}
+
+  const res = await fetch(JSON_URL);
+  const channels = await res.json();
+
+  const channel = channels.find(c => c.channel_id === channelId);
+
+  if(!channel){
+    alert("Channel not found");
+    return;
+  }
+
+  streamUrl = channel.channel_url;
+  keyId = channel.keyId;
+  key = channel.key;
+
+}catch(e){
+  console.log("JSON load failed",e);
+  return;
+}
+
+/* COOKIE */
+
+let cookieHeader = "";
+
+try{
+  const res = await fetch(COOKIE_API,{cache:"no-store"});
+  const data = await res.json();
+  cookieHeader = data.cookie || "";
+}catch(e){
+  console.log("Cookie fetch failed");
+}
+
+/* DRM */
+
+if(keyId && key){
+  player.configure({
+    drm:{
+      clearKeys:{
+        [keyId]:key
+      }
+    }
+  });
+}
+
+/* REQUEST FILTER */
 
 player.getNetworkingEngine().registerRequestFilter((type,request)=>{
 
-request.headers["Referer"]="https://www.jiotv.com/";
-request.headers["User-Agent"]="playtv/7.1.5";
+  request.headers["Referer"]="https://www.jiotv.com/";
+  request.headers["User-Agent"]="plaYtv/7.1.5 (Linux;Android 13)";
 
-if(cookieValue){
-request.headers["Cookie"]=cookieValue;
+  if(cookieHeader){
+
+    request.headers["Cookie"]=cookieHeader;
+
+    let token=cookieHeader.startsWith("__hdnea__=")
+      ?cookieHeader.substring(10)
+      :cookieHeader;
+
+    if(
+      (type===shaka.net.NetworkingEngine.RequestType.MANIFEST ||
+       type===shaka.net.NetworkingEngine.RequestType.SEGMENT) &&
+       request.uris[0] && !request.uris[0].includes("__hdnea__")
+    ){
+
+      const sep=request.uris[0].includes("?")?"&":"?";
+      request.uris[0]+=sep+"__hdnea__="+token;
+
+    }
+
+  }
+
+});
+
+/* LOAD STREAM */
+
+try{
+
+  await player.load(streamUrl);
+
+  video.play().catch(()=>{});
+
+}catch(e){
+  console.error("Load error:",e);
 }
 
 });
 
-await player.load(channel.channel_url);
-
-video.play().catch(()=>{});
-
-}
-
-document.addEventListener("DOMContentLoaded",initPlayer);
-
 </script>
-
+  
 </body>
 </html>
