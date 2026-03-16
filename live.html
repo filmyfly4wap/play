@@ -1,240 +1,183 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Live Stream Player</title>
 
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.ui.min.js"
-    crossorigin="anonymous"></script>
-  <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/controls.min.css"
-    crossorigin="anonymous">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+<script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.ui.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/controls.css">
 
-    html,
-    body {
-      background: #000;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
+<style>
+body{
+margin:0;
+background:#000;
+overflow:hidden;
+}
 
-    .shaka-video-container {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+.shaka-video-container{
+position:fixed;
+inset:0;
+}
 
-    video {
-      width: 100%;
-      height: 100%;
-      background: #000;
-      object-fit: contain;
-    }
-
-    .shaka-spinner-container,
-    .shaka-spinner,
-    .shaka-spinner-svg {
-      display: none !important;
-    }
-
-    .custom-watermark {
-      position: absolute;
-      z-index: 40;
-      pointer-events: none;
-      top: 65%;
-      left: 6%;
-      transform: translateY(-50%);
-      font-size: 11px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.12);
-    }
-
-    @media (max-width: 700px) {
-      .custom-watermark {
-        font-size: 9px;
-        top: 60%;
-        left: 16%;
-      }
-    }
-  </style>
-
-  <style>
-    .custom-watermark {
-      position: absolute;
-      z-index: 40;
-      pointer-events: none;
-      top: 65%;
-      left: 11%;
-      transform: translateY(-50%);
-      font-size: 11px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.12);
-    }
-
-    .custom-watermark img {
-      height: 52px;
-      width: 52px;
-      opacity: 80%;
-    }
-
-
-    @media (max-width: 700px) {
-      .custom-watermark {
-        font-size: 9px;
-        top: 58%;
-        left: 4%;
-      }
-
-      .custom-watermark img {
-        height: 45px;
-        width: 45px;
-        opacity: 80%;
-      }
-    }
-l
-  </style>
-
-
+video{
+width:100%;
+height:100%;
+object-fit:contain;
+}
+</style>
 
 </head>
 
 <body>
-  <div class="shaka-video-container" data-shaka-player>
-    <video autoplay playsinline preload="metadata"></video>
-    <div class="custom-watermark"><img
-        src="https://i.postimg.cc/SNjy16J7/cricketlive.png"></div>
 
-    <script>
-      window.si = window.si || function() {
-        (window.siq = window.siq || []).push(arguments);
-      };
-    </script>
-    <script defer src="/_vercel/speed-insights/script.js"></script>
+<div class="shaka-video-container" id="player-container">
+<video id="video" autoplay muted playsinline></video>
+</div>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', async () => {
-        shaka.polyfill.installAll();
-        if (!shaka.Player.isBrowserSupported()) return;
+<script>
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const channelId = urlParams.get('id');
-        if (!channelId) return;
+function getParam(name){
+const url=new URL(window.location.href);
+return url.searchParams.get(name);
+}
 
-        let streamUrl = "";
-        let drmConfig = {
-          clearKeys: {}
-        };
-        let cookieHeader = "";
+const CHANNEL_JSON="https://raw.githubusercontent.com/filmyfly4wap/mpd/refs/heads/main/mpd.json";
+const COOKIE_URL="https://raw.githubusercontent.com/filmyfly4wap/cookie/refs/heads/main/cookie.json";
 
-        try {
-          const [chanRes, cookRes] = await Promise.all([
-            fetch(
-              'https://raw.githubusercontent.com/filmyfly4wap/mpd/refs/heads/main/mpd.json'
-            ),
-            fetch(
-              'https://raw.githubusercontent.com/filmyfly4wap/cookie/refs/heads/main/cookie.json'
-            )
-          ]);
 
-          const channels = await chanRes.json();
-          const cookieData = await cookRes.json();
+const player = new shaka.Player();
+window.player = player;
+await player.attach(video);
 
-          const channelData = channels.find(c => c.channel_id ===
-            channelId);
-          if (channelData) {
-            streamUrl = channelData.channel_url.split('?')[0];
-            drmConfig.clearKeys[channelData.keyId] = channelData.key;
-            cookieHeader = cookieData.cookieHeader;
-            document.title = channelData.channel_name +
-              " - Sayan Official";
-          }
-        } catch (e) {}
+const ui = new shaka.ui.Overlay(player, container, video);
+ui.configure({
+  addBigPlayButton: true,
+  controlPanelElements: ["mute", "play_pause", "time_and_duration", "spacer", "quality", "picture_in_picture", "fullscreen"],
+  seekBarColors: { base: "#FFFFFF", buffered: "#DC143C", played: "#32CD32" }
+});
 
-        const video = document.querySelector('video');
-        const player = new shaka.Player();
-        await player.attach(video);
 
-        const container = document.querySelector(
-          '.shaka-video-container');
-        const ui = new shaka.ui.Overlay(player, container, video);
 
-        ui.configure({
-          controlPanelElements: [
-            'play_pause',
-            'time_and_duration',
-            'spacer',
-            'language',
-            'captions',
-            'picture_in_picture',
-            'quality',
-            'fullscreen'
-          ],
-volumeBarColors: {
-    base: 'rgb(255,255,255,1)',
-    level: 'rgb(63,107,255,1)'
-  },
-  seekBarColors: {
-    base: 'rgba(255,255,255,1)',
-    buffered: 'rgba(255,255,255,1)',
-    played: 'rgb(63,107,255,1)'
-  }
-        });
+document.addEventListener("DOMContentLoaded",async()=>{
 
-        player.configure({
-          drm: drmConfig,
-          manifest: {
-            defaultPresentationDelay: 5
-          },
-          streaming: {
-            safeSeekOffset: 5,
-            bufferingGoal: 6,
-            rebufferingGoal: 2,
-            alwaysStreamText: true,
-            lowLatencyMode: true
-          }
-        });
+const channelId=getParam("id");
 
-        player.getNetworkingEngine().registerRequestFilter((type,
-          request) => {
-          request.headers['Referer'] = 'https://www.jiotv.com/';
-          request.headers['User-Agent'] =
-            "plaYtv/7.1.5 (Linux;Android 13) ExoPlayerLib/2.11.6";
+if(!channelId){
+alert("Channel ID missing");
+return;
+}
 
-          if (cookieHeader) {
-            request.headers['Cookie'] = cookieHeader;
+const video=document.getElementById("video");
+const container=document.getElementById("player-container");
 
-            if (
-              (type === shaka.net.NetworkingEngine.RequestType
-                .MANIFEST ||
-                type === shaka.net.NetworkingEngine.RequestType
-                .SEGMENT) &&
-              !request.uris[0].includes('__hdnea__=')
-            ) {
-              const sep = request.uris[0].includes('?') ? '&' : '?';
-              request.uris[0] += sep + cookieHeader;
-            }
-          }
-        });
+shaka.polyfill.installAll();
 
-        try {
-          await player.load(streamUrl);
-          video.play();
-        } catch (e) {}
-      });
-    </script>
+if(!shaka.Player.isBrowserSupported()){
+alert("Browser not supported");
+return;
+}
+
+const player=new shaka.Player();
+await player.attach(video);
+
+new shaka.ui.Overlay(player,container,video);
+
+/* JSON Fetch */
+
+let channel;
+
+try{
+
+const response=await fetch(CHANNEL_JSON);
+const channels=await response.json();
+
+channel=channels.find(c=>c.channel_id===channelId);
+
+if(!channel){
+alert("Channel not found");
+return;
+}
+
+}catch(e){
+
+console.error("JSON load error",e);
+return;
+
+}
+
+/* DRM */
+
+player.configure({
+drm:{
+clearKeys:{
+[channel.keyId]:channel.key
+}
+}
+});
+
+/* Cookie */
+
+let cookieValue="";
+
+try{
+
+const response=await fetch(COOKIE_URL,{cache:"no-store"});
+const data=await response.json();
+cookieValue=data.cookie || "";
+
+}catch(e){
+console.log("Cookie fetch failed");
+}
+
+/* Request Filter */
+
+player.getNetworkingEngine().registerRequestFilter((type,request)=>{
+
+request.headers["Referer"]="https://www.jiotv.com/";
+request.headers["User-Agent"]="playtv/7.1.5";
+
+if(cookieValue){
+
+request.headers["Cookie"]=cookieValue;
+
+let token=cookieValue.startsWith("__hdnea__=")
+?cookieValue.substring(10)
+:cookieValue;
+
+if(
+(type===shaka.net.NetworkingEngine.RequestType.MANIFEST ||
+type===shaka.net.NetworkingEngine.RequestType.SEGMENT)
+&& !request.uris[0].includes("__hdnea__")
+){
+
+const sep=request.uris[0].includes("?")?"&":"?";
+request.uris[0]+=sep+"__hdnea__="+token;
+
+}
+
+}
+
+});
+
+/* Load Stream */
+
+try{
+
+await player.load(channel.channel_url);
+
+video.play().catch(()=>{});
+
+}catch(e){
+
+console.error("Stream load error",e);
+
+}
+
+});
+
+</script>
+
 </body>
-
 </html>
