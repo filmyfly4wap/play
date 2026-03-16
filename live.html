@@ -47,17 +47,6 @@ const CHANNEL_JSON="https://raw.githubusercontent.com/filmyfly4wap/mpd/refs/head
 const COOKIE_URL="https://raw.githubusercontent.com/filmyfly4wap/cookie/refs/heads/main/cookie.json";
 
 
-const player = new shaka.Player();
-window.player = player;
-await player.attach(video);
-
-const ui = new shaka.ui.Overlay(player, container, video);
-ui.configure({
-  addBigPlayButton: true,
-  controlPanelElements: ["mute", "play_pause", "time_and_duration", "spacer", "quality", "picture_in_picture", "fullscreen"],
-  seekBarColors: { base: "#FFFFFF", buffered: "#DC143C", played: "#32CD32" }
-});
-
 
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -83,7 +72,16 @@ const player=new shaka.Player();
 await player.attach(video);
 
 new shaka.ui.Overlay(player,container,video);
-
+ui.configure({
+      addBigPlayButton: true,
+      controlPanelElements: ["play_pause", "time_and_duration",
+        "spacer", "quality", "mute", "fullscreen"
+      ],
+      seekBarColors: {
+        base: 'rgba(255,255,255,1)',
+        buffered: 'rgba(255,255,255,1)',
+        played: 'rgb(63,107,255,1)'
+      }
 /* JSON Fetch */
 
 let channel;
