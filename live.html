@@ -72,17 +72,7 @@ const player=new shaka.Player();
 await player.attach(video);
 
 new shaka.ui.Overlay(player,container,video);
-        ui.configure({
-          addBigPlayButton: true,
-          controlPanelElements: ["play_pause", "time_and_duration",
-            "spacer", "quality", "mute", "fullscreen"
-          ],
-          seekBarColors: {
-  base: 'rgba(255,255,255,1)',
-  buffered: 'rgba(255,255,255,1)',
-  played: 'rgb(63,107,255,1)'
-}
-        });
+        
 /* JSON Fetch */
 
 let channel;
