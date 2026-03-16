@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Live Stream Player</title>
+<title>cricketlive.site new</title>
 
 <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.ui.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/controls.css">
@@ -72,16 +72,17 @@ const player=new shaka.Player();
 await player.attach(video);
 
 new shaka.ui.Overlay(player,container,video);
-ui.configure({
-      addBigPlayButton: true,
-      controlPanelElements: ["play_pause", "time_and_duration",
-        "spacer", "quality", "mute", "fullscreen"
-      ],
-      seekBarColors: {
-        base: 'rgba(255,255,255,1)',
-        buffered: 'rgba(255,255,255,1)',
-        played: 'rgb(63,107,255,1)'
-      }
+        ui.configure({
+          addBigPlayButton: true,
+          controlPanelElements: ["play_pause", "time_and_duration",
+            "spacer", "quality", "mute", "fullscreen"
+          ],
+          seekBarColors: {
+  base: 'rgba(255,255,255,1)',
+  buffered: 'rgba(255,255,255,1)',
+  played: 'rgb(63,107,255,1)'
+}
+        });
 /* JSON Fetch */
 
 let channel;
