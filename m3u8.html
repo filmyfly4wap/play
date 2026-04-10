@@ -39,9 +39,10 @@ video,.plyr{width:100%;height:100%;background:#000}
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(location.search);
-  
+  const src = params.get("url"); || 
+  const poster = params.get("poster");
   const video = document.getElementById("player");
-  ;
+  video.setAttribute("poster", poster);
 
   function showOverlay(title, sub) {
     const o = document.createElement("div");
