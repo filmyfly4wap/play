@@ -1,134 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<title>Dillzy Live Player</title>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-<meta name="referrer" content="no-referrer"/>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.polyfilled.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-FMP9REY96D"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-FMP9REY96D');
-</script>
-
-<style>
-html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden;font-family:Inter,sans-serif}
-.video-container{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;background:#000}
-video,.plyr{width:100%;height:100%;background:#000}
-.block-overlay{position:absolute;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#000;text-align:center}
-.block-box{max-width:820px;width:88%}
-.block-title{font-family:"Playfair Display",serif;font-size:32px;color:#cfd2d6;margin-bottom:12px}
-.block-sub{font-size:15px;color:#9ea3a8;line-height:1.6}
-:root{--plyr-color-main:#00b3ff}
-</style>
-</head>
-
-<body>
-<div class="video-container" id="container">
-  <video id="player" controls playsinline muted preload="auto"></video>
-</div>
-
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-  const params = new URLSearchParams(location.search);
-  const src = params.get("url"); || 
-  const poster = params.get("poster");
-  const video = document.getElementById("player");
-  video.setAttribute("poster", poster);
-
-  function showOverlay(title, sub) {
-    const o = document.createElement("div");
-    o.className = "block-overlay";
-    o.innerHTML = `<div class="block-box"><div class="block-title">${title}</div><div class="block-sub">${sub}</div></div>`;
-    document.getElementById("container").appendChild(o);
-  }
-
-  function isSandbox() {
-    try {
-      return window.self !== window.top && (window.frameElement?.hasAttribute("sandbox") || !window.frameElement);
-    } catch (e) { return true; }
-  }
-
-  async function loadScript(u) {
-    return new Promise((res, rej) => {
-      const s = document.createElement("script");
-      s.src = u; s.async = true;
-      s.onload = res; s.onerror = rej;
-      setTimeout(rej, 5000);
-      document.body.appendChild(s);
-    });
-  }
-
-  if (Hls.isSupported()) {
-    const hls = new Hls({
-      debug: false,
-      enableWorker: true,
-      lowLatencyMode: true,
-      backBufferLength: 90,
-      maxBufferLength: 30,
-      maxMaxBufferLength: 60,
-      manifestLoadingMaxRetry: 10,
-      levelLoadingMaxRetry: 10,
-      fragLoadingMaxRetry: 10,
-      startLevel: -1
-    });
-
-    hls.loadSource(src);
-    hls.attachMedia(video);
-
-    hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
-      const levels = data.levels || [];
-      const qualities = [...new Set(levels.map(l => l.height))].filter(Boolean).sort((a, b) => b - a);
-      
-      const plyr = new Plyr(video, {
-        controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "settings", "fullscreen"],
-        quality: {
-          default: qualities.find(q => q <= 720) || qualities[0],
-          options: qualities,
-          forced: true,
-          onChange: (v) => {
-            levels.forEach((level, index) => {
-              if (level.height === v) hls.currentLevel = index;
-            });
-          }
-        }
-      });
-    });
-
-    hls.on(Hls.Events.ERROR, (event, data) => {
-      if (data.fatal) {
-        switch (data.type) {
-          case Hls.ErrorTypes.NETWORK_ERROR:
-            hls.startLoad();
-            break;
-          case Hls.ErrorTypes.MEDIA_ERROR:
-            hls.recoverMediaError();
-            break;
-          default:
-            hls.destroy();
-            break;
-        }
+  <title>PLYR PLAYER</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta name="referrer" content="no-referrer"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.6.12/dist/plyr.css"/>
+  <style>
+    body {
+      background-color: #000000;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    html, body {
+      height: 100%;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+    }
+    .plyr {
+      height: 100%;
+    }
+  </style>
+  
+        <style>
+        
+         .shaka-video-container {
+   position: absolute;
+   inset: 0;
+   width: 100%;
+   height: 100%;
+ }
+    .custom-watermark {
+      position: absolute;
+      z-index: 40;
+      pointer-events: none;
+      top: 65%;
+      left: 11%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.12);
+    }
+    
+    .custom-watermark img {
+      height: 52px;
+      width: 52px;
+      opacity: 80%;
+    }
+    
+    
+    @media (max-width: 700px) {
+      .custom-watermark {
+        font-size: 9px;
+        top: 58%;
+        left: 4%;
       }
-    });
+      
+      .custom-watermark img {
+        height: 45px;
+        width: 45px;
+        opacity: 80%;
+      }
+    }
 
-  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src = src;
-    new Plyr(video);
-  }
 
-  video.addEventListener('stalled', () => {
-    video.load();
-    video.play();
+
+</style>
+
+
+</head>
+<body>
+  <div class="shaka-video-container">
+  <video autoplay="yes" oncanplay="this.muted=true"  id="player" controls preload="metadata" controls></video>
+    <div class="custom-watermark"><img src="https://i.postimg.cc/SNjy16J7/cricketlive.png"></div>
+</div>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.4/dist/hls.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/plyr@3.6.12/dist/plyr.min.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const video = document.getElementById('player');
+
+    // ====== Get URL from query param
+    const urlParams = new URLSearchParams(window.location.search);
+    const source = urlParams.get("url");
+    if (!source) {
+      document.body.innerHTML = "";
+      return;
+    }
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({ maxMaxBufferLength: 100 });
+      hls.loadSource(source);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        const availableQualities = hls.levels.map(level => level.height).filter(Boolean).sort((a, b) => b - a);
+        const defaultQuality = availableQualities.includes(1080) ? 1080 : (availableQualities[0] || 360);
+
+        const player = new Plyr(video, {
+          controls: ['play-large', 'play', 'mute', 'volume', 'settings', 'fullscreen'],
+          quality: {
+            default: defaultQuality,
+            options: availableQualities,
+            forced: true,
+            onChange: (quality) => {
+              hls.levels.forEach((level, levelIndex) => {
+                if (level.height === quality) {
+                  hls.currentLevel = levelIndex;
+                }
+              });
+            }
+          }
+        });
+
+        // Force autoplay unmute
+        video.muted = true; // required for autoplay to start
+        video.play().then(() => {
+          video.muted = false; // unmute after autoplay starts
+        }).catch(err => console.log("Autoplay blocked:", err));
+
+        document.addEventListener('fullscreenchange', () => {
+          if (document.fullscreenElement) {
+            if (screen.orientation && screen.orientation.lock) {
+              screen.orientation.lock('landscape').catch(err => console.error('Error locking orientation:', err));
+            }
+          }
+        });
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = source;
+      new Plyr(video);
+      video.muted = true;
+      video.play().then(() => { video.muted = false; }).catch(err => console.log("Autoplay blocked:", err));
+    } else {
+      document.body.innerHTML = '<p>Your browser does not support HLS playback.</p>';
+    }
   });
-});
 </script>
+
 </body>
 </html>
