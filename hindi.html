@@ -4,7 +4,6 @@
 
 <body>
   <html lang="en">
-
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
@@ -47,12 +46,46 @@
       object-fit: contain;
       background: #000;
     }
-
-      .shaka-seek-bar-container {
+    
+  .shaka-seek-bar-container {
     display: none !important;
-      }
+}
   </style>
-
+  
+  <style>
+    .custom-watermark {
+      position: absolute;
+      z-index: 40;
+      pointer-events: none;
+      top: 65%;
+      left: 11%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.12);
+    }
+    
+    .custom-watermark img {
+      height: 52px;
+      width: 52px;
+      opacity: 80%;
+    }
+    
+    
+    @media (max-width: 700px) {
+      .custom-watermark {
+        font-size: 9px;
+        top: 58%;
+        left: 4%;
+      }
+      
+      .custom-watermark img {
+        height: 45px;
+        width: 45px;
+        opacity: 80%;
+      }
+    }
+</style>
 
 
 
@@ -61,7 +94,7 @@
 
   <div class="shaka-video-container" id="player-container">
     <video id="video" autoplay muted playsinline preload="metadata"></video>
-    <div class="custom-watermark"> </div>
+    <div class="custom-watermark"><img src="https://i.postimg.cc/SNjy16J7/cricketlive.png"></div>
   </div>
 
   <script>
@@ -122,7 +155,7 @@
         streamUrl: "https://jiotvpllive.cdn.jio.com/bpk-tv/Star_Sports_HD1_Hindi_BTS/WDVLive/index.mpd",
         keyId: "400131994b445d8c8817202248760fda",
         key: "2d56cb6f07a75b9aff165d534ae2bfc4",
-        cookieUrl: "https://allrounder-live2.pages.dev/api/cookie.json"
+        cookieUrl: "https://allrounder-live2.pages.dev/api/star-1-hindi.json"
       };
 
 
@@ -220,8 +253,6 @@
       });
     })();
   </script>
-
-
 </body>
 
 </html>
