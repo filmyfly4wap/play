@@ -1,12 +1,9 @@
 <!DOCTYPE html>
-
 <head></head>
-
 <body>
   <html lang="en">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-
   <meta name="referrer" content="no-referrer">
   <script
     src="https://cdn.jsdelivr.net/npm/shaka-player@4.16.2/dist/shaka-player.ui.min.js">
@@ -87,11 +84,6 @@
     }
 </style>
 
-
-
-
-
-
   <div class="shaka-video-container" id="player-container">
     <video id="video" autoplay muted playsinline preload="metadata"></video>
     <div class="custom-watermark"><img src="https://i.postimg.cc/SNjy16J7/cricketlive.png"></div>
@@ -152,9 +144,9 @@
       }
       const CONFIG = {
 
-        streamUrl: "https://jiotvpllive.cdn.jio.com/bpk-tv/StarSportsHD2Hin_BTS/WDVLive/index.mpd",
-        keyId: "bd1ea6a1c1fb5dcdb709434e0826bbc0",
-        key: "f57f22cba32739ce7beb1fab3f3d060b",
+        streamUrl: "https://jiotvpllive.cdn.jio.com/bpk-tv/Star_Sports_HD1_Hindi_BTS/WDVLive/index.mpd",
+        keyId: "400131994b445d8c8817202248760fda",
+        key: "2d56cb6f07a75b9aff165d534ae2bfc4",
         cookieUrl: "https://allrounder-live5.pages.dev/api/star-1-hindi.json"
       };
 
@@ -177,9 +169,9 @@
         ui.configure({
           addBigPlayButton: true,
           controlPanelElements: [
-            "mute", // First - volume/mute button
-            "play_pause", // Second - play/pause button  
-            "time_and_duration", // Third - timeline timings (00:00 / 00:00)
+            "mute",
+            "play_pause",
+            "time_and_duration", 
             "spacer",
             "quality",
             "picture_in_picture",
