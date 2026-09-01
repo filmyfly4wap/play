@@ -93,6 +93,11 @@
 </head>
 <body>
 
+  <!-- Hidden Keep-Alive Audio Element for Screen-Off Support -->
+  <audio id="silentAudio" loop preload="auto">
+    <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" type="audio/wav">
+  </audio>
+
   <div class="toast" id="toast">SALON LIGHTS ON</div>
   <div id="youtube-player"></div>
 
@@ -175,11 +180,11 @@
   </section>
 
   <script>
-    // आपकी दी गई Playlist ID
     const PLAYLIST_ID = 'PLVFLMYM1tErk';
     
-    let player = null, ready = false, timer = null, lastVideo = '';
+    let player = null, ready = false, timer = null, lastVideo = '', isUserPlaying = false;
     const $ = id => document.getElementById(id);
+    const silentAudio = $('silentAudio');
 
     function fmt(s) {
       if (!Number.isFinite(s) || s < 0) return '0:00';
@@ -199,6 +204,33 @@
       else $('coverContainer').classList.remove('playing');
     }
 
+    // Lock Screen & Background Media Controls
+    function setupMediaSession(title, artist, cover) {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title || 'Deluxe Salon Radio',
+          artist: artist || 'YouTube Playlist',
+          album: 'Deluxe Salon',
+          artwork: cover ? [{ src: cover, sizes: '512x512', type: 'image/jpeg' }] : []
+        });
+
+        navigator.mediaSession.setActionHandler('play', () => {
+          if (ready && player) {
+            player.playVideo();
+            silentAudio.play().catch(()=>{});
+          }
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          if (ready && player) {
+            player.pauseVideo();
+            silentAudio.pause();
+          }
+        });
+        navigator.mediaSession.setActionHandler('previoustrack', () => ready && player && player.previousVideo());
+        navigator.mediaSession.setActionHandler('nexttrack', () => ready && player && player.nextVideo());
+      }
+    }
+
     function update() {
       if (!ready || !player) return;
       try {
@@ -211,10 +243,12 @@
         if (data.title) $('trackTitle').textContent = data.title;
         if (data.video_id && data.video_id !== lastVideo) {
           lastVideo = data.video_id;
+          const imgUrl = 'https://i.ytimg.com/vi/' + data.video_id + '/hqdefault.jpg';
           const im = $('coverImage');
-          im.src = 'https://i.ytimg.com/vi/' + data.video_id + '/hqdefault.jpg';
+          im.src = imgUrl;
           im.onload = () => im.style.display = 'block';
           im.onerror = () => im.style.display = 'none';
+          setupMediaSession(data.title, data.author, imgUrl);
         }
       } catch (e) {}
     }
@@ -249,11 +283,21 @@
           },
           onStateChange: e => {
             if (e.data === YT.PlayerState.PLAYING) {
+              isUserPlaying = true;
               icon(true);
               status('NOW PLAYING • DELUXE RADIO', true);
+              silentAudio.play().catch(()=>{});
             } else if (e.data === YT.PlayerState.PAUSED) {
-              icon(false);
-              status('PAUSED • PRESS PLAY');
+              // अगर बैकग्राउंड/स्क्रीन ऑफ के कारण ब्राउज़र ने पॉज़ किया, तो तुरंत ऑटो-रिज्यूम करें
+              if (document.hidden && isUserPlaying) {
+                setTimeout(() => {
+                  try { player.playVideo(); } catch(err){}
+                }, 100);
+              } else {
+                icon(false);
+                status('PAUSED • PRESS PLAY');
+                silentAudio.pause();
+              }
             } else if (e.data === YT.PlayerState.BUFFERING) {
               status('BUFFERING…');
             } else {
@@ -269,6 +313,20 @@
       });
     }
 
+    // जब यूजर स्क्रीन बंद करे या टैब बदले, बैकग्राउंड प्लेबैक एक्टिव रखे
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && isUserPlaying && ready && player) {
+        silentAudio.play().catch(()=>{});
+        setTimeout(() => {
+          try {
+            if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+              player.playVideo();
+            }
+          } catch(e) {}
+        }, 150);
+      }
+    });
+
     function toast(t) {
       const x = $('toast');
       x.textContent = t;
@@ -279,7 +337,15 @@
     $('play').onclick = () => {
       if (!ready) { toast('Playlist loading…'); return; }
       try {
-        player.getPlayerState() === YT.PlayerState.PLAYING ? player.pauseVideo() : player.playVideo();
+        if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+          isUserPlaying = false;
+          player.pauseVideo();
+          silentAudio.pause();
+        } else {
+          isUserPlaying = true;
+          player.playVideo();
+          silentAudio.play().catch(()=>{});
+        }
       } catch (e) {
         toast('Press play again');
       }
